@@ -1,0 +1,25 @@
+{
+  "name": "agent-evidence-gate",
+  "version": "0.1.0",
+  "description": "Verify AI coding agent work with deterministic evidence scorecards.",
+  "type": "module",
+  "bin": {
+    "agent-evidence-gate": "./bin/agent-evidence-gate.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check:examples": "node bin/agent-evidence-gate.js check --agents examples/AGENTS.md --diff examples/diff.patch --evidence examples/evidence.md --pr-body examples/pr-body.md --format markdown"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "keywords": [
+    "agents",
+    "AGENTS.md",
+    "ai-coding",
+    "github-action",
+    "evidence",
+    "pull-request"
+  ]
+}

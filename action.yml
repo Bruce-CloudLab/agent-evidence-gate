@@ -1,0 +1,63 @@
+name: Agent Evidence Gate
+description: Verify AI coding agent work with an evidence scorecard before human review.
+author: Agent Evidence Gate
+
+inputs:
+  agents-path:
+    description: Path to AGENTS.md or another policy file.
+    required: false
+    default: AGENTS.md
+  evidence-path:
+    description: Path to a Markdown file containing verification evidence.
+    required: false
+    default: evidence.md
+  format:
+    description: Output format: text, markdown, or json.
+    required: false
+    default: markdown
+  threshold:
+    description: Optional score threshold overriding AGENTS.md min_score.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Create pull request diff
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -n "${{ github.base_ref }}" ]; then
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          git diff --unified=0 "origin/${{ github.base_ref }}...HEAD" > "$RUNNER_TEMP/agent-evidence.diff"
+        else
+          git diff --unified=0 HEAD~1...HEAD > "$RUNNER_TEMP/agent-evidence.diff"
+        fi
+
+    - name: Write pull request body
+      shell: bash
+      run: |
+        cat > "$RUNNER_TEMP/agent-evidence-pr-body.md" <<'PR_BODY'
+        ${{ github.event.pull_request.body }}
+        PR_BODY
+
+    - name: Run evidence gate
+      shell: bash
+      run: |
+        set -euo pipefail
+        THRESHOLD_ARG=()
+        if [ -n "${{ inputs.threshold }}" ]; then
+          THRESHOLD_ARG=(--threshold "${{ inputs.threshold }}")
+        fi
+
+        node "$GITHUB_ACTION_PATH/bin/agent-evidence-gate.js" check \
+          --agents "${{ inputs.agents-path }}" \
+          --diff "$RUNNER_TEMP/agent-evidence.diff" \
+          --evidence "${{ inputs.evidence-path }}" \
+          --pr-body "$RUNNER_TEMP/agent-evidence-pr-body.md" \
+          --format "${{ inputs.format }}" \
+          "${THRESHOLD_ARG[@]}"
+
+branding:
+  icon: check-circle
+  color: green

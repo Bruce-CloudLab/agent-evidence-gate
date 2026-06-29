@@ -1,0 +1,6 @@
+node_modules/
+coverage/
+.nyc_output/
+*.log
+agent.diff
+evidence.local.md
