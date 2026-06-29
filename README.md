@@ -8,7 +8,7 @@ It is not another `AGENTS.md` linter. Context linters check whether instructions
 
 - Required test or verification evidence is present.
 - Required commands from `AGENTS.md` appear in the evidence.
-- Protected paths were not changed without explicit approval.
+- Protected paths were not changed without maintainer-controlled approval.
 - Forbidden debug leftovers were not added.
 - The diff is not far larger than the project allows.
 - Completion claims such as "fixed" or "ready" are backed by command evidence.
@@ -82,6 +82,14 @@ node bin/agent-evidence-gate.js check --agents AGENTS.md --diff agent.diff --evi
 
 The command exits with code `0` only when the work is ready.
 
+Protected paths are blocked by default. Maintainers can allow them from a trusted workflow or local command:
+
+```bash
+node bin/agent-evidence-gate.js check --agents AGENTS.md --diff agent.diff --evidence evidence.md --allow-protected-paths
+```
+
+Do not put approval phrases in PR bodies or evidence files. Those files can be controlled by the PR author.
+
 ## GitHub Action
 
 Add `.github/workflows/agent-evidence-gate.yml`:
@@ -107,6 +115,7 @@ jobs:
           agents-path: AGENTS.md
           evidence-path: evidence.md
           format: markdown
+          allow-protected-paths: "false"
 ```
 
 For the MVP, the action fails or passes the check. Comment posting can be added later without changing the CLI contract.
@@ -115,7 +124,7 @@ For the MVP, the action fails or passes the check. Comment posting can be added 
 
 ```bash
 agent-evidence-gate init [--agents AGENTS.md] [--write]
-agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--format text|markdown|json] [--threshold 80]
+agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--format text|markdown|json] [--threshold 80] [--allow-protected-paths]
 ```
 
 ## Why This Exists

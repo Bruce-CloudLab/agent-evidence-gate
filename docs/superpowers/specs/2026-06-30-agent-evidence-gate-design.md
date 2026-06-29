@@ -82,11 +82,13 @@ agent-evidence-gate check \
 
 The command exits with code `0` when the score is at or above the threshold and there are no blocking issues. It exits with code `1` otherwise.
 
+Protected path changes are blocked by default. They can only be downgraded to a warning through a maintainer-controlled CLI or GitHub Action flag such as `--allow-protected-paths`; approval phrases in PR bodies or evidence files are not trusted.
+
 ## Scorecard Rules
 
 - Evidence presence: required evidence categories must appear.
 - Must-run commands: required commands must be present in evidence.
-- Protected paths: protected files changed without explicit approval are blocking.
+- Protected paths: protected files changed without maintainer-controlled approval are blocking.
 - Forbidden added patterns: forbidden strings in added diff lines are blocking.
 - Scope size: unusually large diffs produce warnings or penalties.
 - Completion claims: "done", "fixed", "complete", or similar claims without command evidence are blocking.

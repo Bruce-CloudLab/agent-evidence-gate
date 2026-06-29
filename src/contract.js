@@ -7,8 +7,7 @@ const DEFAULT_CONTRACT = Object.freeze({
   forbiddenAddedPatterns: ["console.log", "debugger", "TODO", "FIXME"],
   requiredEvidence: ["test"],
   maxChangedFiles: 25,
-  minScore: 80,
-  approvalPhrase: "approved protected path"
+  minScore: 80
 });
 
 export function defaultContract() {
@@ -18,8 +17,7 @@ export function defaultContract() {
     forbiddenAddedPatterns: [...DEFAULT_CONTRACT.forbiddenAddedPatterns],
     requiredEvidence: [...DEFAULT_CONTRACT.requiredEvidence],
     maxChangedFiles: DEFAULT_CONTRACT.maxChangedFiles,
-    minScore: DEFAULT_CONTRACT.minScore,
-    approvalPhrase: DEFAULT_CONTRACT.approvalPhrase
+    minScore: DEFAULT_CONTRACT.minScore
   };
 }
 
@@ -67,9 +65,6 @@ export function parseContract(markdown = "") {
         break;
       case "minscore":
         contract.minScore = parsePositiveInteger(value, contract.minScore);
-        break;
-      case "approvalphrase":
-        contract.approvalPhrase = value;
         break;
     }
   }

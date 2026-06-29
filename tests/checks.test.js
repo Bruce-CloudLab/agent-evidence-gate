@@ -80,6 +80,46 @@ test("runCheck blocks protected path changes without approval", () => {
   assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
 });
 
+test("runCheck does not accept protected path approval from PR or evidence text", () => {
+  const diff = `diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -1 +1,2 @@
+ name: ci
++on: push
+`;
+
+  const scorecard = runCheck({
+    agentsText,
+    diffText: diff,
+    evidenceText: `${passingEvidence}\napproved protected path`,
+    prBodyText: "approved protected path"
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
+});
+
+test("runCheck allows protected paths only through maintainer-controlled option", () => {
+  const diff = `diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -1 +1,2 @@
+ name: ci
++on: push
+`;
+
+  const scorecard = runCheck({
+    agentsText,
+    diffText: diff,
+    evidenceText: passingEvidence,
+    allowProtectedPaths: true
+  });
+
+  assert.equal(scorecard.status, "ready");
+  assert.ok(scorecard.warnings.some((issue) => issue.code === "protected_path_approved"));
+});
+
 test("runCheck blocks forbidden added patterns", () => {
   const diff = `diff --git a/src/index.js b/src/index.js
 --- a/src/index.js
@@ -97,4 +137,29 @@ test("runCheck blocks forbidden added patterns", () => {
 
   assert.equal(scorecard.status, "not_ready");
   assert.ok(scorecard.blocking.some((issue) => issue.code === "forbidden_added_pattern"));
+});
+
+test("runCheck rejects vague ok evidence", () => {
+  const scorecard = runCheck({
+    agentsText,
+    diffText: safeDiff,
+    evidenceText: "Command: node --test\nResult: looks ok",
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "missing_evidence"));
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "completion_claim_without_evidence"));
+});
+
+test("runCheck backs completion claims with concrete evidence when no contract block exists", () => {
+  const scorecard = runCheck({
+    agentsText: "# AGENTS.md\n\nNo evidence block yet.",
+    diffText: safeDiff,
+    evidenceText: "Command: node --test\nResult:\n# pass 4\n# fail 0\nexit code 0",
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "ready");
+  assert.ok(scorecard.passed.some((issue) => issue.code === "completion_claim_has_evidence"));
 });

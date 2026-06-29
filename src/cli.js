@@ -8,7 +8,7 @@ const HELP = `Agent Evidence Gate
 
 Usage:
   agent-evidence-gate init [--agents AGENTS.md] [--write]
-  agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--format text|markdown|json] [--threshold 80]
+  agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--format text|markdown|json] [--threshold 80] [--allow-protected-paths]
 
 Commands:
   init    Print or append a starter AGENTS.md evidence contract.
@@ -81,7 +81,8 @@ function runCheckCommand(args, io) {
     diffText: io.readFile(diffPath),
     evidenceText: io.readFile(evidencePath),
     prBodyText: prBodyPath ? io.readFile(prBodyPath) : "",
-    threshold
+    threshold,
+    allowProtectedPaths: Boolean(args.allowProtectedPaths)
   });
 
   io.stdout.write(formatScorecard(scorecard, args.format || "text"));
@@ -128,7 +129,7 @@ function parseArgs(argv) {
     const rawName = token.slice(2);
     const name = toCamel(rawName);
 
-    if (name === "write" || name === "help") {
+    if (name === "write" || name === "help" || name === "allowProtectedPaths") {
       args[name] = true;
       continue;
     }

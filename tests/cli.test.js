@@ -61,6 +61,35 @@ test("CLI check returns non-zero for missing evidence", async () => {
   assert.equal(parsed.status, "not_ready");
 });
 
+test("CLI exposes maintainer-controlled protected path approval flag", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "aeg-"));
+  writeFileSync(join(dir, "AGENTS.md"), agentsTextWithProtectedPath(), "utf8");
+  writeFileSync(join(dir, "diff.patch"), protectedDiff(), "utf8");
+  writeFileSync(join(dir, "evidence.md"), passingEvidence(), "utf8");
+
+  const output = createOutput();
+  const exitCode = await main(
+    [
+      "check",
+      "--agents",
+      "AGENTS.md",
+      "--diff",
+      "diff.patch",
+      "--evidence",
+      "evidence.md",
+      "--allow-protected-paths",
+      "--format",
+      "json"
+    ],
+    testIo(dir, output)
+  );
+
+  assert.equal(exitCode, 0);
+  const parsed = JSON.parse(output.stdout);
+  assert.equal(parsed.status, "ready");
+  assert.ok(parsed.warnings.some((issue) => issue.code === "protected_path_approved"));
+});
+
 function testIo(cwd, output) {
   return {
     cwd: () => cwd,
@@ -104,6 +133,17 @@ min_score: 80
 `;
 }
 
+function agentsTextWithProtectedPath() {
+  return `
+\`\`\`agent-evidence
+must_run: node --test
+protected_path: .github/**
+require_evidence: test
+min_score: 80
+\`\`\`
+`;
+}
+
 function safeDiff() {
   return `diff --git a/src/math.js b/src/math.js
 --- a/src/math.js
@@ -111,6 +151,16 @@ function safeDiff() {
 @@ -1 +1,2 @@
  export const add = (a, b) => a + b;
 +export const subtract = (a, b) => a - b;
+`;
+}
+
+function protectedDiff() {
+  return `diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -1 +1,2 @@
+ name: ci
++on: push
 `;
 }
 

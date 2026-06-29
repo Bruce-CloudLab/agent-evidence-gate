@@ -3,14 +3,16 @@ import { parseUnifiedDiff } from "./diff.js";
 import { globMatches, includesText } from "./match.js";
 
 const COMPLETION_CLAIM = /\b(done|fixed|complete|completed|resolved|ready|implemented)\b/i;
-const COMMAND_EVIDENCE = /\b(exit code 0|0 failures|0 failed|tests? pass(?:ed|ing)?|all tests pass(?:ed)?|# pass\s+\d+|ok\b|success)\b/i;
+const COMMAND_EVIDENCE =
+  /\b(exit code 0|0 failures|0 failed|# fail\s+0|# pass\s+\d+|tests?:\s+\d+\s+passed|all tests pass(?:ed)?)\b/i;
 
 export function runCheck({
   agentsText = "",
   diffText = "",
   evidenceText = "",
   prBodyText = "",
-  threshold
+  threshold,
+  allowProtectedPaths = false
 } = {}) {
   const contract = parseContract(agentsText);
   const effectiveThreshold = Number.isInteger(threshold) ? threshold : contract.minScore;
@@ -31,7 +33,7 @@ export function runCheck({
 
   checkEvidence(contract, evidenceText, scorecard);
   checkMustRun(contract, evidenceText, scorecard);
-  checkProtectedPaths(contract, parsedDiff, evidenceText, prBodyText, scorecard);
+  checkProtectedPaths(contract, parsedDiff, allowProtectedPaths, scorecard);
   checkForbiddenAddedPatterns(contract, parsedDiff, scorecard);
   checkScope(contract, parsedDiff, scorecard);
   checkCompletionClaims(contract, evidenceText, prBodyText, scorecard);
@@ -68,14 +70,12 @@ function checkMustRun(contract, evidenceText, scorecard) {
   }
 }
 
-function checkProtectedPaths(contract, parsedDiff, evidenceText, prBodyText, scorecard) {
+function checkProtectedPaths(contract, parsedDiff, allowProtectedPaths, scorecard) {
   if (contract.protectedPaths.length === 0) {
     pass(scorecard, "no_protected_path_changes", "No protected path rules are configured.");
     return;
   }
 
-  const approvalText = `${evidenceText}\n${prBodyText}`;
-  const hasApproval = includesText(approvalText, contract.approvalPhrase);
   const changedProtectedFiles = parsedDiff.changedFiles.filter((file) =>
     contract.protectedPaths.some((pattern) => globMatches(pattern, file))
   );
@@ -85,11 +85,11 @@ function checkProtectedPaths(contract, parsedDiff, evidenceText, prBodyText, sco
     return;
   }
 
-  if (hasApproval) {
+  if (allowProtectedPaths) {
     warn(
       scorecard,
       "protected_path_approved",
-      `Protected paths changed with approval phrase: ${changedProtectedFiles.join(", ")}`,
+      `Protected paths changed with maintainer-controlled approval: ${changedProtectedFiles.join(", ")}`,
       5
     );
     return;
@@ -151,7 +151,7 @@ function checkCompletionClaims(contract, evidenceText, prBodyText, scorecard) {
   const hasRequiredCommand = contract.mustRun.some((command) => includesText(evidenceText, command));
   const hasCommandEvidence = COMMAND_EVIDENCE.test(evidenceText);
 
-  if (hasRequiredCommand && hasCommandEvidence) {
+  if ((contract.mustRun.length === 0 || hasRequiredCommand) && hasCommandEvidence) {
     pass(scorecard, "completion_claim_has_evidence", "Completion claim is backed by command evidence.");
     return;
   }

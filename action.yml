@@ -19,6 +19,10 @@ inputs:
     description: Optional score threshold overriding AGENTS.md min_score.
     required: false
     default: ""
+  allow-protected-paths:
+    description: Set to true only from a maintainer-controlled workflow when protected path changes are expected.
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -29,17 +33,18 @@ runs:
         set -euo pipefail
         if [ -n "${{ github.base_ref }}" ]; then
           git fetch origin "${{ github.base_ref }}" --depth=1
-          git diff --unified=0 "origin/${{ github.base_ref }}...HEAD" > "$RUNNER_TEMP/agent-evidence.diff"
+          BASE_SHA="$(git rev-parse FETCH_HEAD)"
+          git diff --unified=0 "$BASE_SHA" HEAD > "$RUNNER_TEMP/agent-evidence.diff"
         else
-          git diff --unified=0 HEAD~1...HEAD > "$RUNNER_TEMP/agent-evidence.diff"
+          git diff --unified=0 HEAD~1 HEAD > "$RUNNER_TEMP/agent-evidence.diff"
         fi
 
     - name: Write pull request body
       shell: bash
+      env:
+        PR_BODY: ${{ github.event.pull_request.body }}
       run: |
-        cat > "$RUNNER_TEMP/agent-evidence-pr-body.md" <<'PR_BODY'
-        ${{ github.event.pull_request.body }}
-        PR_BODY
+        printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/agent-evidence-pr-body.md"
 
     - name: Run evidence gate
       shell: bash
@@ -49,6 +54,10 @@ runs:
         if [ -n "${{ inputs.threshold }}" ]; then
           THRESHOLD_ARG=(--threshold "${{ inputs.threshold }}")
         fi
+        PROTECTED_ARG=()
+        if [ "${{ inputs.allow-protected-paths }}" = "true" ]; then
+          PROTECTED_ARG=(--allow-protected-paths)
+        fi
 
         node "$GITHUB_ACTION_PATH/bin/agent-evidence-gate.js" check \
           --agents "${{ inputs.agents-path }}" \
@@ -56,7 +65,8 @@ runs:
           --evidence "${{ inputs.evidence-path }}" \
           --pr-body "$RUNNER_TEMP/agent-evidence-pr-body.md" \
           --format "${{ inputs.format }}" \
-          "${THRESHOLD_ARG[@]}"
+          "${THRESHOLD_ARG[@]}" \
+          "${PROTECTED_ARG[@]}"
 
 branding:
   icon: check-circle

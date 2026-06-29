@@ -34,7 +34,7 @@ approval_phrase: owner approved
   assert.ok(contract.requiredEvidence.includes("screenshot"));
   assert.equal(contract.maxChangedFiles, 12);
   assert.equal(contract.minScore, 90);
-  assert.equal(contract.approvalPhrase, "owner approved");
+  assert.equal(contract.approvalPhrase, undefined);
 });
 
 test("hasEvidenceBlock detects starter block", () => {
