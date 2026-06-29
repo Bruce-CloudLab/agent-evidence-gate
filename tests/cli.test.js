@@ -90,6 +90,36 @@ test("CLI exposes maintainer-controlled protected path approval flag", async () 
   assert.ok(parsed.warnings.some((issue) => issue.code === "protected_path_approved"));
 });
 
+test("CLI uses policy-path to protect the real policy path when agents file is temporary", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "aeg-"));
+  writeFileSync(join(dir, "trusted-policy.md"), agentsText(), "utf8");
+  writeFileSync(join(dir, "diff.patch"), policyTamperDiff(), "utf8");
+  writeFileSync(join(dir, "evidence.md"), passingEvidence(), "utf8");
+
+  const output = createOutput();
+  const exitCode = await main(
+    [
+      "check",
+      "--agents",
+      "trusted-policy.md",
+      "--policy-path",
+      "AGENTS.md",
+      "--diff",
+      "diff.patch",
+      "--evidence",
+      "evidence.md",
+      "--format",
+      "json"
+    ],
+    testIo(dir, output)
+  );
+
+  assert.equal(exitCode, 1);
+  const parsed = JSON.parse(output.stdout);
+  assert.equal(parsed.status, "not_ready");
+  assert.ok(parsed.blocking.some((issue) => issue.code === "protected_path_changed"));
+});
+
 function testIo(cwd, output) {
   return {
     cwd: () => cwd,
@@ -161,6 +191,16 @@ function protectedDiff() {
 @@ -1 +1,2 @@
  name: ci
 +on: push
+`;
+}
+
+function policyTamperDiff() {
+  return `diff --git a/AGENTS.md b/AGENTS.md
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -1 +1,2 @@
+ # AGENTS.md
++No evidence block anymore.
 `;
 }
 

@@ -6,6 +6,7 @@ test("parseContract returns safe defaults when no block exists", () => {
   const contract = parseContract("# AGENTS.md\n\nUse tests.");
 
   assert.deepEqual(contract.mustRun, []);
+  assert.deepEqual(contract.protectedPaths, []);
   assert.deepEqual(contract.requiredEvidence, ["test"]);
   assert.equal(contract.minScore, 80);
   assert.equal(contract.maxChangedFiles, 25);

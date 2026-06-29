@@ -27,15 +27,20 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Create pull request diff
+    - name: Prepare trusted policy and diff
       shell: bash
+      env:
+        BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        AGENTS_PATH: ${{ inputs.agents-path }}
       run: |
         set -euo pipefail
-        if [ -n "${{ github.base_ref }}" ]; then
-          git fetch origin "${{ github.base_ref }}" --depth=1
-          BASE_SHA="$(git rev-parse FETCH_HEAD)"
+
+        if [ -n "$BASE_SHA" ]; then
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git show "$BASE_SHA:$AGENTS_PATH" > "$RUNNER_TEMP/agent-evidence-policy.md"
           git diff --unified=0 "$BASE_SHA" HEAD > "$RUNNER_TEMP/agent-evidence.diff"
         else
+          cp "$AGENTS_PATH" "$RUNNER_TEMP/agent-evidence-policy.md"
           git diff --unified=0 HEAD~1 HEAD > "$RUNNER_TEMP/agent-evidence.diff"
         fi
 
@@ -48,23 +53,30 @@ runs:
 
     - name: Run evidence gate
       shell: bash
+      env:
+        AGENTS_PATH: ${{ inputs.agents-path }}
+        EVIDENCE_PATH: ${{ inputs.evidence-path }}
+        FORMAT: ${{ inputs.format }}
+        THRESHOLD: ${{ inputs.threshold }}
+        ALLOW_PROTECTED_PATHS: ${{ inputs.allow-protected-paths }}
       run: |
         set -euo pipefail
         THRESHOLD_ARG=()
-        if [ -n "${{ inputs.threshold }}" ]; then
-          THRESHOLD_ARG=(--threshold "${{ inputs.threshold }}")
+        if [ -n "$THRESHOLD" ]; then
+          THRESHOLD_ARG=(--threshold "$THRESHOLD")
         fi
         PROTECTED_ARG=()
-        if [ "${{ inputs.allow-protected-paths }}" = "true" ]; then
+        if [ "$ALLOW_PROTECTED_PATHS" = "true" ]; then
           PROTECTED_ARG=(--allow-protected-paths)
         fi
 
         node "$GITHUB_ACTION_PATH/bin/agent-evidence-gate.js" check \
-          --agents "${{ inputs.agents-path }}" \
+          --agents "$RUNNER_TEMP/agent-evidence-policy.md" \
+          --policy-path "$AGENTS_PATH" \
           --diff "$RUNNER_TEMP/agent-evidence.diff" \
-          --evidence "${{ inputs.evidence-path }}" \
+          --evidence "$EVIDENCE_PATH" \
           --pr-body "$RUNNER_TEMP/agent-evidence-pr-body.md" \
-          --format "${{ inputs.format }}" \
+          --format "$FORMAT" \
           "${THRESHOLD_ARG[@]}" \
           "${PROTECTED_ARG[@]}"
 

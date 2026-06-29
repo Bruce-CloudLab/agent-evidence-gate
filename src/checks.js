@@ -1,10 +1,10 @@
 import { parseContract } from "./contract.js";
 import { parseUnifiedDiff } from "./diff.js";
-import { globMatches, includesText } from "./match.js";
+import { globMatches, includesText, normalizePath } from "./match.js";
 
 const COMPLETION_CLAIM = /\b(done|fixed|complete|completed|resolved|ready|implemented)\b/i;
 const COMMAND_EVIDENCE =
-  /\b(exit code 0|0 failures|0 failed|# fail\s+0|# pass\s+\d+|tests?:\s+\d+\s+passed|all tests pass(?:ed)?)\b/i;
+  /(?:\bexit code 0\b|\b0 failures\b|\b0 failed\b|# fail\s+0\b|# pass\s+\d+\b|\btests?:\s+\d+\s+passed\b|\ball tests pass(?:ed)?\b)/i;
 
 export function runCheck({
   agentsText = "",
@@ -12,9 +12,11 @@ export function runCheck({
   evidenceText = "",
   prBodyText = "",
   threshold,
-  allowProtectedPaths = false
+  allowProtectedPaths = false,
+  policyPath = "AGENTS.md"
 } = {}) {
   const contract = parseContract(agentsText);
+  protectPolicyPath(contract, policyPath);
   const effectiveThreshold = Number.isInteger(threshold) ? threshold : contract.minScore;
   const parsedDiff = parseUnifiedDiff(diffText);
   const scorecard = {
@@ -27,7 +29,8 @@ export function runCheck({
     metadata: {
       changedFiles: parsedDiff.changedFiles,
       requiredEvidence: contract.requiredEvidence,
-      mustRun: contract.mustRun
+      mustRun: contract.mustRun,
+      protectedPaths: contract.protectedPaths
     }
   };
 
@@ -43,6 +46,15 @@ export function runCheck({
   }
 
   return scorecard;
+}
+
+function protectPolicyPath(contract, policyPath) {
+  const normalizedPolicyPath = normalizePath(policyPath || "AGENTS.md");
+  if (!normalizedPolicyPath) {
+    return;
+  }
+
+  contract.protectedPaths = [...new Set([...contract.protectedPaths, normalizedPolicyPath])];
 }
 
 function checkEvidence(contract, evidenceText, scorecard) {

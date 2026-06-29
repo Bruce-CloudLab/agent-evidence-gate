@@ -8,7 +8,7 @@ const HELP = `Agent Evidence Gate
 
 Usage:
   agent-evidence-gate init [--agents AGENTS.md] [--write]
-  agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--format text|markdown|json] [--threshold 80] [--allow-protected-paths]
+  agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--policy-path AGENTS.md] [--format text|markdown|json] [--threshold 80] [--allow-protected-paths]
 
 Commands:
   init    Print or append a starter AGENTS.md evidence contract.
@@ -82,7 +82,8 @@ function runCheckCommand(args, io) {
     evidenceText: io.readFile(evidencePath),
     prBodyText: prBodyPath ? io.readFile(prBodyPath) : "",
     threshold,
-    allowProtectedPaths: Boolean(args.allowProtectedPaths)
+    allowProtectedPaths: Boolean(args.allowProtectedPaths),
+    policyPath: args.policyPath || args.agents || "AGENTS.md"
   });
 
   io.stdout.write(formatScorecard(scorecard, args.format || "text"));

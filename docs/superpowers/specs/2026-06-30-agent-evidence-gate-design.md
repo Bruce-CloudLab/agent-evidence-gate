@@ -84,11 +84,14 @@ The command exits with code `0` when the score is at or above the threshold and 
 
 Protected path changes are blocked by default. They can only be downgraded to a warning through a maintainer-controlled CLI or GitHub Action flag such as `--allow-protected-paths`; approval phrases in PR bodies or evidence files are not trusted.
 
+In CI, the policy file must come from the trusted base revision, not the PR-modified checkout. The CLI supports this by separating `--agents`, the file to read, from `--policy-path`, the repository path that should be protected in the diff.
+
 ## Scorecard Rules
 
 - Evidence presence: required evidence categories must appear.
 - Must-run commands: required commands must be present in evidence.
 - Protected paths: protected files changed without maintainer-controlled approval are blocking.
+- Policy path: the active policy file path, usually `AGENTS.md`, is protected even if the policy block is missing or removed.
 - Forbidden added patterns: forbidden strings in added diff lines are blocking.
 - Scope size: unusually large diffs produce warnings or penalties.
 - Completion claims: "done", "fixed", "complete", or similar claims without command evidence are blocking.

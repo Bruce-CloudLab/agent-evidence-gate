@@ -152,6 +152,18 @@ test("runCheck rejects vague ok evidence", () => {
   assert.ok(scorecard.blocking.some((issue) => issue.code === "completion_claim_without_evidence"));
 });
 
+test("runCheck accepts concrete node test summary evidence without exit code", () => {
+  const scorecard = runCheck({
+    agentsText,
+    diffText: safeDiff,
+    evidenceText: "Command: node --test\nResult:\n# pass 4\n# fail 0",
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "ready");
+  assert.ok(scorecard.passed.some((issue) => issue.code === "completion_claim_has_evidence"));
+});
+
 test("runCheck backs completion claims with concrete evidence when no contract block exists", () => {
   const scorecard = runCheck({
     agentsText: "# AGENTS.md\n\nNo evidence block yet.",
@@ -162,4 +174,44 @@ test("runCheck backs completion claims with concrete evidence when no contract b
 
   assert.equal(scorecard.status, "ready");
   assert.ok(scorecard.passed.some((issue) => issue.code === "completion_claim_has_evidence"));
+});
+
+test("runCheck protects the policy file path even when no policy block exists", () => {
+  const diff = `diff --git a/AGENTS.md b/AGENTS.md
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -1 +1,2 @@
+ # AGENTS.md
++No policy here anymore.
+`;
+
+  const scorecard = runCheck({
+    agentsText: "# AGENTS.md\n\nNo evidence block yet.",
+    diffText: diff,
+    evidenceText: passingEvidence,
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
+});
+
+test("runCheck protects a custom policy file path", () => {
+  const diff = `diff --git a/docs/agent-policy.md b/docs/agent-policy.md
+--- a/docs/agent-policy.md
++++ b/docs/agent-policy.md
+@@ -1 +1,2 @@
+ # Policy
++No policy here anymore.
+`;
+
+  const scorecard = runCheck({
+    agentsText: "# Policy\n\nNo evidence block yet.",
+    diffText: diff,
+    evidenceText: passingEvidence,
+    policyPath: "docs/agent-policy.md"
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
 });

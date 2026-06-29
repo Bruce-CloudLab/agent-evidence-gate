@@ -82,6 +82,8 @@ node bin/agent-evidence-gate.js check --agents AGENTS.md --diff agent.diff --evi
 
 The command exits with code `0` only when the work is ready.
 
+In CI, evaluate the policy file from the trusted base branch, not from the PR-modified checkout. The provided GitHub Action does this by reading `AGENTS.md` from the pull request base SHA and passing the original policy path separately for protected-path checks.
+
 Protected paths are blocked by default. Maintainers can allow them from a trusted workflow or local command:
 
 ```bash
@@ -124,8 +126,10 @@ For the MVP, the action fails or passes the check. Comment posting can be added 
 
 ```bash
 agent-evidence-gate init [--agents AGENTS.md] [--write]
-agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--format text|markdown|json] [--threshold 80] [--allow-protected-paths]
+agent-evidence-gate check --agents AGENTS.md --diff diff.patch --evidence evidence.md [--pr-body pr.md] [--policy-path AGENTS.md] [--format text|markdown|json] [--threshold 80] [--allow-protected-paths]
 ```
+
+Use `--policy-path` when `--agents` points to a trusted temporary copy of the policy file. The checker protects the original policy path from PR tampering.
 
 ## Why This Exists
 
