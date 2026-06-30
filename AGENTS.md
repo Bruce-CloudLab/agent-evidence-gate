@@ -22,3 +22,5 @@ require_evidence: test
 max_changed_files: 25
 min_score: 80
 ```
+
+Smoke test policy edit for protected-path validation.
