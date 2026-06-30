@@ -6,6 +6,15 @@
   "bin": {
     "agent-evidence-gate": "./bin/agent-evidence-gate.js"
   },
+  "files": [
+    "action.yml",
+    "bin/",
+    "src/",
+    "examples/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "test": "node --test",
     "check:examples": "node bin/agent-evidence-gate.js check --agents examples/AGENTS.md --diff examples/diff.patch --evidence examples/evidence.md --pr-body examples/pr-body.md --format markdown"

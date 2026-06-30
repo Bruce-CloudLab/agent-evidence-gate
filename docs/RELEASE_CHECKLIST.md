@@ -18,6 +18,8 @@ Use this checklist before publishing Agent Evidence Gate v0.1.0.
 
 ## GitHub Smoke Test
 
+Use `docs/GITHUB_SMOKE_TEST.md` for the exact pull request scenarios.
+
 - [ ] Push the repository to GitHub.
 - [ ] Open a test pull request that changes a safe source file and includes passing evidence.
 - [ ] Confirm the provided GitHub Action reads policy from the pull request base SHA.
