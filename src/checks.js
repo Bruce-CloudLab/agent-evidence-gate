@@ -30,6 +30,7 @@ export function runCheck({
     passed: [],
     metadata: {
       changedFiles: parsedDiff.changedFiles,
+      touchedFiles: parsedDiff.touchedFiles,
       requiredEvidence: contract.requiredEvidence,
       mustRun: contract.mustRun,
       protectedPaths: contract.protectedPaths

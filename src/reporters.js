@@ -24,15 +24,26 @@ function formatMarkdown(scorecard) {
   appendIssueSection(lines, "Warnings", scorecard.warnings);
   appendIssueSection(lines, "Passed Checks", scorecard.passed);
 
+  const changedFiles = scorecard.metadata.changedFiles || [];
+  const touchedFiles = scorecard.metadata.touchedFiles || changedFiles;
+
   lines.push("## Changed Files");
-  if (scorecard.metadata.changedFiles.length === 0) {
+  if (changedFiles.length === 0) {
     lines.push("- None detected");
   } else {
-    for (const file of scorecard.metadata.changedFiles) {
+    for (const file of changedFiles) {
       lines.push(`- \`${file}\``);
     }
   }
   lines.push("");
+
+  if (hasDifferentPaths(touchedFiles, changedFiles)) {
+    lines.push("## Touched Paths");
+    for (const file of touchedFiles) {
+      lines.push(`- \`${file}\``);
+    }
+    lines.push("");
+  }
 
   return `${lines.join("\n")}\n`;
 }
@@ -75,4 +86,12 @@ function appendPlainSection(lines, title, issues) {
     }
   }
   lines.push("");
+}
+
+function hasDifferentPaths(left, right) {
+  if (left.length !== right.length) {
+    return true;
+  }
+
+  return left.some((value, index) => value !== right[index]);
 }
