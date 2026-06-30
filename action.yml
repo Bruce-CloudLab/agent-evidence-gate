@@ -12,7 +12,7 @@ inputs:
     required: false
     default: evidence.md
   format:
-    description: Output format: text, markdown, or json.
+    description: "Output format: text, markdown, or json."
     required: false
     default: markdown
   threshold:
