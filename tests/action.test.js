@@ -44,3 +44,13 @@ test("GitHub Action moves inputs into env vars before shell use", () => {
   assert.match(action, /ALLOW_PROTECTED_PATHS: \$\{\{ inputs\.allow-protected-paths \}\}/);
   assert.doesNotMatch(action, /if \[ -n "\$\{\{ inputs\.threshold \}\}" \]/);
 });
+test("GitHub Action quotes description values containing colons", () => {
+  const action = readFileSync(new URL("../action.yml", import.meta.url), "utf8");
+
+  for (const line of action.split(/\r?\n/)) {
+    const match = line.match(/^\s+description:\s+(.+:\s+.+)$/);
+    if (match) {
+      assert.match(match[1], /^(".*"|'.*')$/);
+    }
+  }
+});
