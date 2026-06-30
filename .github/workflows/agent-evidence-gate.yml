@@ -1,0 +1,25 @@
+name: Agent Evidence Gate
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Agent Evidence Gate
+        uses: ./
+        with:
+          agents-path: AGENTS.md
+          evidence-path: evidence.md
+          format: markdown
+          allow-protected-paths: "false"

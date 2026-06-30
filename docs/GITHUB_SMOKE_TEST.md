@@ -5,7 +5,7 @@ Run this after the repository is pushed to GitHub for the first time.
 ## Prerequisites
 
 - The repository exists on GitHub.
-- The default branch contains `action.yml`, `.github/workflows/ci.yml`, and `AGENTS.md`.
+- The default branch contains `action.yml`, `.github/workflows/ci.yml`, `.github/workflows/agent-evidence-gate.yml`, and `AGENTS.md`.
 - GitHub Actions are enabled for the repository.
 
 ## 1. Safe Change Should Pass
