@@ -3,8 +3,10 @@ import { parseUnifiedDiff } from "./diff.js";
 import { globMatches, includesText, normalizePath } from "./match.js";
 
 const COMPLETION_CLAIM = /\b(done|fixed|complete|completed|resolved|ready|implemented)\b/i;
-const COMMAND_EVIDENCE =
-  /(?:\bexit code 0\b|\b0 failures\b|\b0 failed\b|# fail\s+0\b|# pass\s+\d+\b|\btests?:\s+\d+\s+passed\b|\ball tests pass(?:ed)?\b)/i;
+const FAILURE_EVIDENCE =
+  /(?:\bexit code\s+[1-9]\d*\b|# fail\s+[1-9]\d*\b|\b[1-9]\d*\s+fail(?:ed|ures?)\b|\bfail(?:ed|ures?):\s*[1-9]\d*\b)/i;
+const SUCCESS_EVIDENCE =
+  /(?:\bexit code\s+0\b|\b0\s+fail(?:ed|ures?)\b|# fail\s+0\b|\bfail(?:ed|ures?):\s*0\b|\btests?:\s+\d+\s+passed\b|\ball tests pass(?:ed)?\b)/i;
 
 export function runCheck({
   agentsText = "",
@@ -36,6 +38,7 @@ export function runCheck({
 
   checkEvidence(contract, evidenceText, scorecard);
   checkMustRun(contract, evidenceText, scorecard);
+  checkFailureEvidence(evidenceText, scorecard);
   checkProtectedPaths(contract, parsedDiff, allowProtectedPaths, scorecard);
   checkForbiddenAddedPatterns(contract, parsedDiff, scorecard);
   checkScope(contract, parsedDiff, scorecard);
@@ -46,6 +49,15 @@ export function runCheck({
   }
 
   return scorecard;
+}
+
+function checkFailureEvidence(evidenceText, scorecard) {
+  if (hasFailureEvidence(evidenceText)) {
+    block(scorecard, "failing_evidence", "Evidence contains a failed verification signal.", 30);
+    return;
+  }
+
+  pass(scorecard, "no_failing_evidence", "Evidence does not contain known failure signals.");
 }
 
 function protectPolicyPath(contract, policyPath) {
@@ -161,7 +173,7 @@ function checkCompletionClaims(contract, evidenceText, prBodyText, scorecard) {
   }
 
   const hasRequiredCommand = contract.mustRun.some((command) => includesText(evidenceText, command));
-  const hasCommandEvidence = COMMAND_EVIDENCE.test(evidenceText);
+  const hasCommandEvidence = hasSuccessfulCommandEvidence(evidenceText);
 
   if ((contract.mustRun.length === 0 || hasRequiredCommand) && hasCommandEvidence) {
     pass(scorecard, "completion_claim_has_evidence", "Completion claim is backed by command evidence.");
@@ -177,10 +189,18 @@ function hasEvidence(kind, evidenceText) {
   }
 
   if (kind.toLowerCase() === "test") {
-    return /\b(test|tests|node --test|npm test|pytest|vitest|jest)\b/i.test(evidenceText) && COMMAND_EVIDENCE.test(evidenceText);
+    return /\b(test|tests|node --test|npm test|pytest|vitest|jest)\b/i.test(evidenceText) && hasSuccessfulCommandEvidence(evidenceText);
   }
 
   return includesText(evidenceText, kind);
+}
+
+function hasSuccessfulCommandEvidence(evidenceText) {
+  return SUCCESS_EVIDENCE.test(evidenceText) && !hasFailureEvidence(evidenceText);
+}
+
+function hasFailureEvidence(evidenceText) {
+  return FAILURE_EVIDENCE.test(evidenceText);
 }
 
 function pass(scorecard, code, message) {

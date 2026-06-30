@@ -152,6 +152,45 @@ test("runCheck rejects vague ok evidence", () => {
   assert.ok(scorecard.blocking.some((issue) => issue.code === "completion_claim_without_evidence"));
 });
 
+test("runCheck rejects evidence with nonzero node test failures", () => {
+  const scorecard = runCheck({
+    agentsText,
+    diffText: safeDiff,
+    evidenceText: "Command: node --test\nResult:\n# pass 4\n# fail 1\nexit code 1",
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "failing_evidence"));
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "missing_evidence"));
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "completion_claim_without_evidence"));
+});
+
+test("runCheck rejects pass count without zero-failure or zero-exit evidence", () => {
+  const scorecard = runCheck({
+    agentsText,
+    diffText: safeDiff,
+    evidenceText: "Command: node --test\nResult:\n# pass 4",
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "missing_evidence"));
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "completion_claim_without_evidence"));
+});
+
+test("runCheck rejects mixed passed and failed text summaries", () => {
+  const scorecard = runCheck({
+    agentsText,
+    diffText: safeDiff,
+    evidenceText: "Command: node --test\nResult: tests: 4 passed, 1 failed",
+    prBodyText: "Fixed and ready."
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "failing_evidence"));
+});
+
 test("runCheck accepts concrete node test summary evidence without exit code", () => {
   const scorecard = runCheck({
     agentsText,
