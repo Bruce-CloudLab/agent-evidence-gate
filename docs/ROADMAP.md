@@ -4,7 +4,7 @@ Agent Evidence Gate v0.1 is intentionally small: a deterministic CLI plus a GitH
 
 ## v0.2
 
-- Add first-party PR comment output using the existing Markdown scorecard.
+- Build first-party PR comment output on top of reusable Action scorecard outputs.
 - Improve report detail for risky changes without changing the CLI contract.
 - Add more evidence examples for common test runners while keeping failure-first evidence checks.
 - Prepare GitHub Marketplace packaging notes and screenshots.

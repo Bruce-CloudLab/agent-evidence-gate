@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.0 - 2026-06-30
+
+### Added
+
+- GitHub Action outputs for `status`, `score`, `scorecard-markdown`, `scorecard-json`, and `scorecard-path`.
+- Dogfood workflow summary step that writes the action scorecard to the GitHub job summary.
+- Documentation for using the reusable scorecard output from trusted workflows.
+
+### Security and Trust Boundaries
+
+- The Action still fails not-ready checks only after writing outputs, so downstream `if: always()` steps can inspect the scorecard.
+- Scorecard output generation keeps the trusted base policy source, maintainer-controlled protected path approval, and PR body environment-variable handling from v0.1.0.
 ## 0.1.0 - 2026-06-30
 
 Initial public MVP for Agent Evidence Gate.

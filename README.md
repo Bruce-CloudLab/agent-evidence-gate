@@ -118,15 +118,24 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: Bruce-CloudLab/agent-evidence-gate@v0.1.0
+      - id: evidence
+        uses: Bruce-CloudLab/agent-evidence-gate@v0.2.0
         with:
           agents-path: AGENTS.md
           evidence-path: evidence.md
           format: markdown
           allow-protected-paths: "false"
+      - name: Add scorecard to job summary
+        if: always()
+        run: |
+          cat "$SCORECARD_PATH" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SCORECARD_PATH: ${{ steps.evidence.outputs.scorecard-path }}
 ```
 
-For the MVP, the action fails or passes the check. Comment posting can be added later without changing the CLI contract.
+For the MVP, the action fails or passes the check. It also exposes `status`, `score`, `scorecard-markdown`, `scorecard-json`, and `scorecard-path` outputs so workflow owners can post or store the scorecard from their own trusted workflow.
+
+Comment posting can be added later without changing the CLI contract.
 
 ## CLI Reference
 

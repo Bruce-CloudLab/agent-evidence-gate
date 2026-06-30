@@ -54,3 +54,32 @@ test("GitHub Action quotes description values containing colons", () => {
     }
   }
 });
+test("GitHub Action exposes reusable scorecard outputs", () => {
+  const action = readFileSync(new URL("../action.yml", import.meta.url), "utf8");
+
+  assert.match(action, /^outputs:\n/m);
+  assert.match(action, /status:\n\s+description: Current gate status\.\n\s+value: \$\{\{ steps\.run-gate\.outputs\.status \}\}/);
+  assert.match(action, /score:\n\s+description: Numeric score from 0 to 100\.\n\s+value: \$\{\{ steps\.run-gate\.outputs\.score \}\}/);
+  assert.match(action, /scorecard-markdown:\n\s+description: Markdown scorecard body\.\n\s+value: \$\{\{ steps\.run-gate\.outputs\.scorecard-markdown \}\}/);
+  assert.match(action, /scorecard-json:\n\s+description: JSON scorecard body\.\n\s+value: \$\{\{ steps\.run-gate\.outputs\.scorecard-json \}\}/);
+  assert.match(action, /scorecard-path:\n\s+description: Path to the Markdown scorecard file\.\n\s+value: \$\{\{ steps\.run-gate\.outputs\.scorecard-path \}\}/);
+});
+
+test("GitHub Action writes outputs before failing not-ready checks", () => {
+  const action = readFileSync(new URL("../action.yml", import.meta.url), "utf8");
+
+  assert.match(action, /id: run-gate/);
+  assert.match(action, /MARKDOWN_EXIT=\$\?/);
+  assert.match(action, /GATE_EXIT=\$MARKDOWN_EXIT/);
+  assert.match(action, />> "\$GITHUB_OUTPUT"/);
+  assert.match(action, /id: finalize/);
+  assert.match(action, /exit "\$\{\{ steps\.run-gate\.outputs\.gate-exit \}\}"/);
+
+  const runGateIndex = action.indexOf("id: run-gate");
+  const outputIndex = action.indexOf('>> "$GITHUB_OUTPUT"');
+  const finalizeIndex = action.indexOf("id: finalize");
+
+  assert.ok(runGateIndex >= 0);
+  assert.ok(outputIndex > runGateIndex);
+  assert.ok(finalizeIndex > outputIndex);
+});

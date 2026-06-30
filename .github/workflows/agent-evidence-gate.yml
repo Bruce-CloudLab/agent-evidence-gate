@@ -17,9 +17,17 @@ jobs:
           fetch-depth: 0
 
       - name: Run Agent Evidence Gate
+        id: evidence
         uses: ./
         with:
           agents-path: AGENTS.md
           evidence-path: evidence.md
           format: markdown
           allow-protected-paths: "false"
+
+      - name: Add scorecard to job summary
+        if: always()
+        run: |
+          cat "$SCORECARD_PATH" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          SCORECARD_PATH: ${{ steps.evidence.outputs.scorecard-path }}

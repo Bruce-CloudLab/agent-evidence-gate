@@ -24,6 +24,23 @@ inputs:
     required: false
     default: "false"
 
+outputs:
+  status:
+    description: Current gate status.
+    value: ${{ steps.run-gate.outputs.status }}
+  score:
+    description: Numeric score from 0 to 100.
+    value: ${{ steps.run-gate.outputs.score }}
+  scorecard-markdown:
+    description: Markdown scorecard body.
+    value: ${{ steps.run-gate.outputs.scorecard-markdown }}
+  scorecard-json:
+    description: JSON scorecard body.
+    value: ${{ steps.run-gate.outputs.scorecard-json }}
+  scorecard-path:
+    description: Path to the Markdown scorecard file.
+    value: ${{ steps.run-gate.outputs.scorecard-path }}
+
 runs:
   using: composite
   steps:
@@ -52,6 +69,7 @@ runs:
         printf '%s\n' "$PR_BODY" > "$RUNNER_TEMP/agent-evidence-pr-body.md"
 
     - name: Run evidence gate
+      id: run-gate
       shell: bash
       env:
         AGENTS_PATH: ${{ inputs.agents-path }}
@@ -70,15 +88,86 @@ runs:
           PROTECTED_ARG=(--allow-protected-paths)
         fi
 
+        MARKDOWN_PATH="$RUNNER_TEMP/agent-evidence-scorecard.md"
+        JSON_PATH="$RUNNER_TEMP/agent-evidence-scorecard.json"
+        TEXT_PATH="$RUNNER_TEMP/agent-evidence-scorecard.txt"
+
+        set +e
         node "$GITHUB_ACTION_PATH/bin/agent-evidence-gate.js" check \
           --agents "$RUNNER_TEMP/agent-evidence-policy.md" \
           --policy-path "$AGENTS_PATH" \
           --diff "$RUNNER_TEMP/agent-evidence.diff" \
           --evidence "$EVIDENCE_PATH" \
           --pr-body "$RUNNER_TEMP/agent-evidence-pr-body.md" \
-          --format "$FORMAT" \
+          --format markdown \
           "${THRESHOLD_ARG[@]}" \
-          "${PROTECTED_ARG[@]}"
+          "${PROTECTED_ARG[@]}" > "$MARKDOWN_PATH"
+        MARKDOWN_EXIT=$?
+
+        node "$GITHUB_ACTION_PATH/bin/agent-evidence-gate.js" check \
+          --agents "$RUNNER_TEMP/agent-evidence-policy.md" \
+          --policy-path "$AGENTS_PATH" \
+          --diff "$RUNNER_TEMP/agent-evidence.diff" \
+          --evidence "$EVIDENCE_PATH" \
+          --pr-body "$RUNNER_TEMP/agent-evidence-pr-body.md" \
+          --format json \
+          "${THRESHOLD_ARG[@]}" \
+          "${PROTECTED_ARG[@]}" > "$JSON_PATH"
+        JSON_EXIT=$?
+
+        if [ "$FORMAT" = "json" ]; then
+          cat "$JSON_PATH"
+        elif [ "$FORMAT" = "text" ]; then
+          node "$GITHUB_ACTION_PATH/bin/agent-evidence-gate.js" check \
+            --agents "$RUNNER_TEMP/agent-evidence-policy.md" \
+            --policy-path "$AGENTS_PATH" \
+            --diff "$RUNNER_TEMP/agent-evidence.diff" \
+            --evidence "$EVIDENCE_PATH" \
+            --pr-body "$RUNNER_TEMP/agent-evidence-pr-body.md" \
+            --format text \
+            "${THRESHOLD_ARG[@]}" \
+            "${PROTECTED_ARG[@]}" > "$TEXT_PATH"
+          cat "$TEXT_PATH"
+        else
+          cat "$MARKDOWN_PATH"
+        fi
+        set -e
+
+        GATE_EXIT=$MARKDOWN_EXIT
+        if [ "$JSON_EXIT" -ne 0 ] && [ "$MARKDOWN_EXIT" -eq 0 ]; then
+          GATE_EXIT=$JSON_EXIT
+        fi
+
+        STATUS=$(node -e "const fs = require('fs'); const scorecard = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(scorecard.status);" "$JSON_PATH")
+        SCORE=$(node -e "const fs = require('fs'); const scorecard = JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(String(scorecard.score));" "$JSON_PATH")
+
+        append_multiline_output() {
+          local name="$1"
+          local file="$2"
+          local delimiter
+          delimiter="agent_evidence_${name}_$(node -e 'process.stdout.write(require("crypto").randomUUID())')"
+          {
+            printf '%s<<%s\n' "$name" "$delimiter"
+            cat "$file"
+            printf '%s\n' "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+        }
+
+        {
+          printf 'status=%s\n' "$STATUS"
+          printf 'score=%s\n' "$SCORE"
+          printf 'scorecard-path=%s\n' "$MARKDOWN_PATH"
+          printf 'gate-exit=%s\n' "$GATE_EXIT"
+        } >> "$GITHUB_OUTPUT"
+
+        append_multiline_output "scorecard-markdown" "$MARKDOWN_PATH"
+        append_multiline_output "scorecard-json" "$JSON_PATH"
+
+    - name: Finalize evidence gate result
+      id: finalize
+      shell: bash
+      run: |
+        exit "${{ steps.run-gate.outputs.gate-exit }}"
 
 branding:
   icon: check-circle
