@@ -4,6 +4,8 @@ Stop trusting AI coding agents just because they say "done." Agent Evidence Gate
 
 It is not another `AGENTS.md` linter. Context linters check whether instructions are stale. Agent Evidence Gate checks whether the delivered diff and evidence actually satisfy the project contract.
 
+Use it when AI coding agents open pull requests and you want a deterministic first gate before review. The gate reads three things: the project policy, the delivered diff, and the agent's evidence.
+
 ## What It Checks
 
 - Required test or verification evidence is present.
@@ -116,7 +118,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: your-org/agent-evidence-gate@v0.1.0
+      - uses: Bruce-CloudLab/agent-evidence-gate@v0.1.0
         with:
           agents-path: AGENTS.md
           evidence-path: evidence.md
