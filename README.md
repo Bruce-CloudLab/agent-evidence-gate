@@ -88,6 +88,8 @@ In CI, evaluate the policy file from the trusted base branch, not from the PR-mo
 
 Protected paths are blocked by default. Maintainers can allow them from a trusted workflow or local command:
 
+Rename-style diffs are checked against both the old path and the new path, so moving a file out of a protected location is still blocked.
+
 ```bash
 node bin/agent-evidence-gate.js check --agents AGENTS.md --diff agent.diff --evidence evidence.md --allow-protected-paths
 ```

@@ -80,6 +80,25 @@ test("runCheck blocks protected path changes without approval", () => {
   assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
 });
 
+test("runCheck blocks protected paths renamed out of protected locations", () => {
+  const diff = `diff --git a/.github/workflows/ci.yml b/ci.yml
+similarity index 100%
+rename from .github/workflows/ci.yml
+rename to ci.yml
+--- a/.github/workflows/ci.yml
++++ b/ci.yml
+`;
+
+  const scorecard = runCheck({
+    agentsText,
+    diffText: diff,
+    evidenceText: passingEvidence
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
+});
+
 test("runCheck does not accept protected path approval from PR or evidence text", () => {
   const diff = `diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
 --- a/.github/workflows/ci.yml
@@ -94,6 +113,25 @@ test("runCheck does not accept protected path approval from PR or evidence text"
     diffText: diff,
     evidenceText: `${passingEvidence}\napproved protected path`,
     prBodyText: "approved protected path"
+  });
+
+  assert.equal(scorecard.status, "not_ready");
+  assert.ok(scorecard.blocking.some((issue) => issue.code === "protected_path_changed"));
+});
+
+test("runCheck blocks policy files renamed away from the policy path", () => {
+  const diff = `diff --git a/AGENTS.md b/docs/agent-policy-old.md
+similarity index 100%
+rename from AGENTS.md
+rename to docs/agent-policy-old.md
+--- a/AGENTS.md
++++ b/docs/agent-policy-old.md
+`;
+
+  const scorecard = runCheck({
+    agentsText: "# AGENTS.md\n\nNo evidence block yet.",
+    diffText: diff,
+    evidenceText: passingEvidence
   });
 
   assert.equal(scorecard.status, "not_ready");

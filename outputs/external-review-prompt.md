@@ -15,6 +15,7 @@ Prior reviews found these launch blockers:
 3. Evidence success detection was too loose, allowing text such as "looks ok".
 4. GitHub Action read `AGENTS.md` from the PR checkout, so a PR could weaken or delete the policy before scoring.
 5. Failing test evidence could pass because `# pass N` was accepted even when `# fail 1` or `exit code 1` appeared.
+6. Protected paths could be bypassed with rename-style diffs because only the new path was checked.
 
 These were addressed in follow-up commits. Please focus on whether the fixes really close the trust boundaries and whether any new launch blockers remain.
 
@@ -25,7 +26,9 @@ Files to review:
 - docs/superpowers/plans/2026-06-30-agent-evidence-gate.md
 - src/checks.js
 - src/cli.js
+- src/diff.js
 - action.yml
+- tests/diff.test.js
 - tests/checks.test.js
 - tests/cli.test.js
 - tests/action.test.js
@@ -39,8 +42,10 @@ Please answer these questions:
 5. Is evidence detection strict enough? Can `looks ok`, `success`, or `ok` still pass?
 6. Does failing evidence such as `# pass 4`, `# fail 1`, `exit code 1` return `not_ready`?
 7. Is no-agent-evidence-block default behavior reasonable?
-8. Does GitHub Action diff generation have obvious remaining risk?
-9. Is the README safety boundary clear?
-10. Are there launch blockers? If yes, list them as P0/P1/P2.
+8. Are protected paths checked against both old and new paths for rename-style diffs?
+9. Does renaming `.github/**` or `AGENTS.md` out of a protected location return `not_ready`?
+10. Does GitHub Action diff generation have obvious remaining risk?
+11. Is the README safety boundary clear?
+12. Are there launch blockers? If yes, list them as P0/P1/P2.
 
 Please give direct, prioritized feedback. Focus on launch-blocking issues first.

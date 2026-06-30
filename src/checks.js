@@ -100,7 +100,7 @@ function checkProtectedPaths(contract, parsedDiff, allowProtectedPaths, scorecar
     return;
   }
 
-  const changedProtectedFiles = parsedDiff.changedFiles.filter((file) =>
+  const changedProtectedFiles = parsedDiff.touchedFiles.filter((file) =>
     contract.protectedPaths.some((pattern) => globMatches(pattern, file))
   );
 

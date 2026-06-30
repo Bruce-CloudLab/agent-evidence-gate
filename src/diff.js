@@ -25,6 +25,14 @@ export function parseUnifiedDiff(diffText = "") {
       continue;
     }
 
+    if (line.startsWith("--- ")) {
+      const path = parseDiffPath(line.slice(4));
+      if (path && path !== "/dev/null" && current) {
+        current.oldPath = path;
+      }
+      continue;
+    }
+
     if (!current) {
       continue;
     }
@@ -37,6 +45,7 @@ export function parseUnifiedDiff(diffText = "") {
   return {
     files,
     changedFiles: unique(files.map((file) => file.path)),
+    touchedFiles: unique(files.flatMap((file) => [file.oldPath, file.newPath, file.path])),
     addedLines: files.flatMap((file) =>
       file.addedLines.map((text) => ({
         file: file.path,

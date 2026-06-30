@@ -16,6 +16,7 @@ index 1111111..2222222 100644
   const parsed = parseUnifiedDiff(diff);
 
   assert.deepEqual(parsed.changedFiles, ["src/index.js"]);
+  assert.deepEqual(parsed.touchedFiles, ["src/index.js"]);
   assert.deepEqual(
     parsed.addedLines.map((line) => line.text),
     ["console.log(value);", "export const next = 2;"]
@@ -34,5 +35,21 @@ new file mode 100644
   const parsed = parseUnifiedDiff(diff);
 
   assert.deepEqual(parsed.changedFiles, ["docs/readme.md"]);
+  assert.deepEqual(parsed.touchedFiles, ["docs/readme.md"]);
   assert.equal(parsed.addedLines[0].file, "docs/readme.md");
+});
+
+test("parseUnifiedDiff keeps old and new paths for renames", () => {
+  const diff = `diff --git a/.github/workflows/ci.yml b/ci.yml
+similarity index 100%
+rename from .github/workflows/ci.yml
+rename to ci.yml
+--- a/.github/workflows/ci.yml
++++ b/ci.yml
+`;
+
+  const parsed = parseUnifiedDiff(diff);
+
+  assert.deepEqual(parsed.changedFiles, ["ci.yml"]);
+  assert.deepEqual(parsed.touchedFiles, [".github/workflows/ci.yml", "ci.yml"]);
 });
